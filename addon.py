@@ -3,32 +3,35 @@ import codecs
 import re
 
 from datetime import datetime,timedelta
-from urllib.parse import quote
+from urllib import quote
 
 _sesh = requests.session()
 
 BASE_URL = "http://iris.banq.qc.ca/alswww2.dll/"
 # form data
 
-r=_sesh.get("http://iris.banq.qc.ca")
-print(r.cookies)
-r=_sesh.get(BASE_URL+"APS_ZONES", params={"fn":"QuickSearch","Style":"Portal3"})
-print(r.cookies)
+r=_sesh.get(BASE_URL+"APS_ZONES", params={"fn":"AdvancedSearch","Style":"Portal3"})
 
+obj_id = re.findall('METHOD="?GET"? ACTION="(Obj_[0-9]+)"', r.text)[0]
 
-obj_id = re.findall('METHOD="GET" ACTION="(Obj_[0-9]+)"', r.text)[0]
+# example:
+# http://iris.banq.qc.ca/alswww2.dll/Obj_564731451675170?Style=Portal3&SubStyle=&Lang=FRE&ResponseEncoding=utf-8&Method=QueryWithLimits&SearchType=AdvancedSearch&TargetSearchType=AdvancedSearch&DB=SearchServer&q.PageSize=10&q.form.t1.term=TitleSeries%3D&q.form.t1.expr=criterion&q.form.t2.logic=+and+&q.form.t2.term=au%3D&q.form.t2.expr=&q.form.t3.logic=+and+&q.form.t3.term=su%3D&q.form.t3.expr=&q.limits.limit=EnLigne.limits.enligne&q.limits.limit=medium.limits.Films&q.dpStart=&q.dpEnd=
 
 queryForm = {"Style" : "Portal3",
              "SubStyle" : "",
              "Lang" : "FRE",
              "ResponseEncoding" : "utf-8",
              "Method" : "QueryWithLimits",
-             "SearchType" : "QuickSearch",
+             "SearchType" : "AdvancedSearch",
              "DB" : "SearchServer",
-             "TargetSearchType" : "QuickSearch",
-             "q.PageSize" : "10",
-             "q.limits.limit" : "medium.limits.Films",
-             "q.Query" : "criterion",
+             "TargetSearchType" : "AdvancedSearch",
+             "q.PageSize" : "50",
+             "q.limits.limit" : ["medium.limits.Films","EnLigne.limits.enligne"],
+             #"q.Query" : "criterion",
+             
+             # advanced terms
+             "q.form.t1.term" : "TitleSeries=",
+             "q.form.t1.expr" : "criterion",
              }
 
 # try to spoof cookies
@@ -70,7 +73,7 @@ print(r)
 print(dir(r))
 print(r.url)
 #print(r.text)
-f=codecs.open("C:\\Users\\Marcello\\AppData\\Local\\Temp\\test.txt","w","utf-8")
+f=codecs.open("/tmp/test.html","w","utf-8")
 f.write(r.text)
 f.close()
 
