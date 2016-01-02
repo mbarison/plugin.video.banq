@@ -4,6 +4,7 @@ import re
 import json
 import copy
 from BeautifulSoup import BeautifulSoup
+from xbmc import translatePath
 
 hexentityMassage = copy.copy(BeautifulSoup.MARKUP_MASSAGE)
 # replace hexadecimal character reference by decimal one
@@ -40,7 +41,7 @@ class BanqSession(requests.Session):
         if self.logged_in:
             return
         
-        f = open("pwd.json")
+        f = open(translatePath("special://home/addons/plugin.video.banq/pwd.json"))
         loginForm = json.load(f)
         f.close()
 
