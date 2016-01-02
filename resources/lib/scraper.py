@@ -1,4 +1,4 @@
-from banq import SingleSession as sesh
+from banq import BanqSession as sesh
 from datetime import datetime,timedelta
 from urllib import quote,unquote
 from BeautifulSoup import BeautifulSoup
@@ -18,7 +18,7 @@ def get_records(txt):
     items = []
     for rec in recs:
         lnk = rec.find('a')
-        items.append({ 'name'      : lnk["title"].strip(),
+        items.append({ 'name'      : lnk["title"].replace("[ressource \u00e9lectronique]","").strip(),
                        'url'       : BASE_URL+lnk['href'].replace("View=ISBD","View=Annotated"), # use all info
                        'thumbnail' : BASE_URL+"/Portal3/IMG/MAT/Video_enligne.png"
                       })
@@ -33,7 +33,7 @@ def get_record_info(url):
     link_ptn = re.compile("(http://res.banq.qc.ca/login\?url=http://search.alexanderstreet.com/view/work/[0-9]+)")
     
     item = {"url" : link_ptn.findall(r.text)[0]}
-    item['name'] = soup.find('span', {'class' : "BoldTitle"})
+    item['name'] = soup.find('span', {'class' : "BoldTitle"}).text.strip()
     
     return [item]
 
@@ -97,3 +97,9 @@ def get_collection(query_string):
     r = sesh().get(BASE_URL+obj_id, params=queryForm) 
     
     return get_records(r.text)
+
+def get_video_paywall(url):
+    sesh().login()
+    r = sesh().get(unquote(url))
+    ptn = re.compile('source src="(.+?)" type="video/mp4"')
+    return ptn.findall(r.text)[0]

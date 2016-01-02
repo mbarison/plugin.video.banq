@@ -42,6 +42,8 @@ def show_collection(url):
 def show_record_info(url):
     records = get_record_info(url)
 
+    print records
+
     videos = [{
         'label': rec["name"],
         'path': plugin.url_for('play_video', url=rec['url']),
@@ -55,16 +57,15 @@ def show_record_info(url):
     sorted_items = sorted(videos, key=by_label)
     return sorted_items
 
-"""
+
 @plugin.route('/videos/<url>/')
 def play_video(url):
-    video = Video.from_url(url)
-    url = video.video_url
-    plugin.log.info('Playing url: %s' % url)
-    plugin.set_resolved_url(url)
+    videourl = get_video_paywall(url)
+    plugin.log.info('Playing url: %s' % videourl)
+    plugin.set_resolved_url(videourl)
     if platform.machine() == 'x86_64':
-        subprocess.call(["vlc",url])
-"""
+        subprocess.call(["vlc",videourl])
+
 
 if __name__ == '__main__':
     plugin.run()
