@@ -4,7 +4,14 @@ import re
 import json
 import copy
 from BeautifulSoup import BeautifulSoup
-from xbmc import translatePath
+
+# use this for testing only
+try:
+    from xbmc import translatePath
+except:
+    import os
+    def translatePath(p):
+        return p.replace("special://home/addons/", os.path.expanduser("~/"))
 
 hexentityMassage = copy.copy(BeautifulSoup.MARKUP_MASSAGE)
 # replace hexadecimal character reference by decimal one

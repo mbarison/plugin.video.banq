@@ -5,6 +5,7 @@ from BeautifulSoup import BeautifulSoup
 import re
 
 BASE_URL = "http://iris.banq.qc.ca/alswww2.dll/"
+RESULTS_PER_PAGE = 50
 
 def bs_parse(txt):
     '''Parses HTML via BeautifulSoup'''
@@ -18,10 +19,10 @@ def get_results_page(url, set):
     # ok, so now I have to use POST for no reason? FACEPALM
     queryForm = {"Style" : "Portal3",
                  "SubStyle" : "",
-                 "Lang" : "FRE",
+                 "Lang" : "ENG",
                  "ResponseEncoding" : "utf-8",
                  "BrowseAsHloc" : "",
-                 "q.PageSize" : "10",
+                 "q.PageSize" : RESULTS_PER_PAGE,
                  "SET"        : set,
                  }
     
@@ -37,13 +38,15 @@ def get_results_page(url, set):
 def get_records(txt):
     soup = bs_parse(txt)
     
+    ptn = re.compile("\s\[ressource.+que\]\s?")
+    
     recs  = soup.findAll('td', {'class' :"SummaryImageCell"})
     recs += soup.findAll('td', {'class' :"SummaryImageCellStripe"})
     items = []
     skiplinks = []
     for rec in recs:
         lnk = rec.find('a')
-        items.append({ 'name'      : lnk["title"].encode("utf-8").replace("[ressource \xc3\xa9lectronique]","").strip(),
+        items.append({ 'name'      : ptn.sub("", lnk["title"]).strip(),
                        'url'       : BASE_URL+lnk['href'].replace("View=ISBD","View=Annotated"), # use all info
                        'thumbnail' : BASE_URL+"/Portal3/IMG/MAT/Video_enligne.png"
                       })
@@ -81,13 +84,13 @@ def get_collection(query_string):
 
     queryForm = {"Style" : "Portal3",
                  "SubStyle" : "",
-                 "Lang" : "FRE",
+                 "Lang" : "ENG",
                  "ResponseEncoding" : "utf-8",
                  "Method" : "QueryWithLimits",
                  "SearchType" : "AdvancedSearch",
                  "DB" : "SearchServer",
                  "TargetSearchType" : "AdvancedSearch",
-                 "q.PageSize" : "10",
+                 "q.PageSize" : RESULTS_PER_PAGE,
                  "q.limits.limit" : ["medium.limits.Films","EnLigne.limits.enligne"],
                  #"q.Query" : "criterion",
                  
