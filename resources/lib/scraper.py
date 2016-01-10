@@ -10,20 +10,54 @@ def bs_parse(txt):
     '''Parses HTML via BeautifulSoup'''
     return BeautifulSoup(txt, convertEntities=BeautifulSoup.HTML_ENTITIES)
 
+def get_results_page(url, set):
+    url = unquote(url).strip()
+  
+    print url
+    
+    # ok, so now I have to use POST for no reason? FACEPALM
+    queryForm = {"Style" : "Portal3",
+                 "SubStyle" : "",
+                 "Lang" : "FRE",
+                 "ResponseEncoding" : "utf-8",
+                 "BrowseAsHloc" : "",
+                 "q.PageSize" : "10",
+                 "SET"        : set,
+                 }
+    
+    print sesh()
+    
+    r = sesh().get(url) #post(url, data=queryForm)
+    print r.text
+    
+    print sesh()
+    
+    return get_records(r.text)
+
 def get_records(txt):
     soup = bs_parse(txt)
     
     recs  = soup.findAll('td', {'class' :"SummaryImageCell"})
     recs += soup.findAll('td', {'class' :"SummaryImageCellStripe"})
     items = []
+    skiplinks = []
     for rec in recs:
         lnk = rec.find('a')
-        items.append({ 'name'      : lnk["title"].replace("[ressource \u00e9lectronique]","").strip(),
+        items.append({ 'name'      : lnk["title"].encode("utf-8").replace("[ressource \xc3\xa9lectronique]","").strip(),
                        'url'       : BASE_URL+lnk['href'].replace("View=ISBD","View=Annotated"), # use all info
                        'thumbnail' : BASE_URL+"/Portal3/IMG/MAT/Video_enligne.png"
                       })
 
-    return items
+    _set = re.findall('<INPUT TYPE=HIDDEN NAME="Set" VALUE = "(.+?)">', txt)[0]
+
+    # let's see i there's any records left
+    for lnk in soup.findAll('a', {'class' : "pageNavLink"}):
+        skiplinks.append({'name' : lnk["title"],
+                          'url'       : BASE_URL+lnk['href'],
+                          'thumbnail' : "http://iris.banq.qc.ca"+lnk.find("img")["src"],
+                          'set'       : _set})
+
+    return items,skiplinks
 
 def get_record_info(url):
     r = sesh().get(unquote(url))
@@ -33,7 +67,7 @@ def get_record_info(url):
     link_ptn = re.compile("(http://res.banq.qc.ca/login\?url=http://search.alexanderstreet.com/view/work/[0-9]+)")
     
     item = {"url" : link_ptn.findall(r.text)[0]}
-    item['name'] = soup.find('span', {'class' : "BoldTitle"}).text.strip()
+    item['name'] = soup.find('span', {'class' : "BoldTitle"}).text.encode("utf-8").replace("[ressource \xc3\xa9lectronique]","").replace("(Film)","").strip()
     
     return [item]
 
@@ -53,7 +87,7 @@ def get_collection(query_string):
                  "SearchType" : "AdvancedSearch",
                  "DB" : "SearchServer",
                  "TargetSearchType" : "AdvancedSearch",
-                 "q.PageSize" : "50",
+                 "q.PageSize" : "10",
                  "q.limits.limit" : ["medium.limits.Films","EnLigne.limits.enligne"],
                  #"q.Query" : "criterion",
                  

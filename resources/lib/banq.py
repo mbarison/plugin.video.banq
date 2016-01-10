@@ -36,8 +36,7 @@ class BanqSession(requests.Session):
         super(BanqSession, self).__init__()
         self.logged_in = False
     
-    def login(self):
-        
+    def login(self):        
         if self.logged_in:
             return
         
@@ -70,5 +69,6 @@ class BanqSession(requests.Session):
         for i in self.cookies:
             print(i.name,i.value,i.expires)
             
+        print "LOGIN COMPLETE"
         self.logged_in = True
         return

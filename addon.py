@@ -19,24 +19,62 @@ def main_menu():
 
 @plugin.route('/collection/<url>')
 def show_collection(url):
-    records = get_collection(url)
+    records,skiplinks = get_collection(url)
 
-    items = [{
-        'label': rec["name"],
-        'path': plugin.url_for('show_record_info', url=rec["url"]),
-        'thumbnail' : rec["thumbnail"],
-        #'info' : {"Plot" : girl.description},
-    } for rec in records]
+    items = []
+ 
+    for rec in skiplinks[:len(skiplinks)/2]:
+        items.append({'label': rec["name"],
+                      'path': plugin.url_for('show_results', url=rec["url"], set=rec["set"]),
+                      'thumbnail' : rec["thumbnail"]})
 
-    #items.insert(0, {'label' : "Previous Girls",
-    #               'path'  : plugin.url_for('show_girls',url=[1,pagecount-1][pagecount>1])})
-    #items.insert(1, {'label' : "Next Girls",
-    #               'path'  : plugin.url_for('show_girls',url=pagecount+1)})
+    for rec in records:
+        items.append({'label': rec["name"],
+                      'path': plugin.url_for('show_record_info', url=rec["url"]),
+                      'thumbnail' : rec["thumbnail"],
+                      #'info' : {"Plot" : girl.description},
+                      })
+
+    for rec in skiplinks[len(skiplinks)/2:]:
+        items.append({'label': rec["name"],
+                      'path': plugin.url_for('show_results', url=rec["url"], set=rec["set"]),
+                      'thumbnail' : rec["thumbnail"]})
+
+    
     
     print "ITEMS", len(items)
    
     return items
 
+@plugin.route('/results/<url>/<set>')
+def show_results(url,set):
+    print url, set
+    records,skiplinks = get_results_page(url, set)
+
+    items = []
+ 
+    for rec in skiplinks[:len(skiplinks)/2]:
+        items.append({'label': rec["name"],
+                      'path': plugin.url_for('show_results', url=rec["url"], set=rec["set"]),
+                      'thumbnail' : rec["thumbnail"]})
+
+    for rec in records:
+        items.append({'label': rec["name"],
+                      'path': plugin.url_for('show_record_info', url=rec["url"]),
+                      'thumbnail' : rec["thumbnail"],
+                      #'info' : {"Plot" : girl.description},
+                      })
+
+    for rec in skiplinks[len(skiplinks)/2:]:
+        items.append({'label': rec["name"],
+                      'path': plugin.url_for('show_results', url=rec["url"], set=rec["set"]),
+                      'thumbnail' : rec["thumbnail"]})
+
+    
+    
+    print "ITEMS", len(items)
+    
+    return items
 
 @plugin.route('/record/<url>/')
 def show_record_info(url):
