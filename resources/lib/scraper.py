@@ -1,4 +1,3 @@
-from banq import BanqSession as sesh
 from datetime import datetime,timedelta
 from urllib import quote,unquote
 from BeautifulSoup import BeautifulSoup
@@ -11,8 +10,7 @@ def bs_parse(txt):
     '''Parses HTML via BeautifulSoup'''
     return BeautifulSoup(txt, convertEntities=BeautifulSoup.HTML_ENTITIES)
 
-def get_results_page(url, set):
-    url = unquote(url).strip()
+def get_results_page(sesh, url, set):
   
     print url
     
@@ -26,14 +24,11 @@ def get_results_page(url, set):
                  "SET"        : set,
                  }
     
-    print sesh()
     
-    r = sesh().get(url) #post(url, data=queryForm)
-    print r.text
-    
-    print sesh()
-    
-    return get_records(r.text)
+    r = sesh.get(url, timeout=None) #post(url, data=queryForm)
+    #print r.content
+        
+    return get_records(r.content)
 
 def get_records(txt):
     soup = bs_parse(txt)
@@ -62,22 +57,24 @@ def get_records(txt):
 
     return items,skiplinks
 
-def get_record_info(url):
-    r = sesh().get(unquote(url))
-    soup = bs_parse(r.text)
+def get_record_info(sesh, url):
+    
+    r = sesh.get(unquote(url), timeout=None)
+    soup = bs_parse(r.content)
     
     # hmmm, unstructured pages...
     link_ptn = re.compile("(http://res.banq.qc.ca/login\?url=http://search.alexanderstreet.com/view/work/[0-9]+)")
     
-    item = {"url" : link_ptn.findall(r.text)[0]}
+    item = {"url" : link_ptn.findall(r.content)[0]}
     item['name'] = soup.find('span', {'class' : "BoldTitle"}).text.encode("utf-8").replace("[ressource \xc3\xa9lectronique]","").replace("(Film)","").strip()
     
     return [item]
 
-def get_collection(query_string):
-    r=sesh().get(BASE_URL+"APS_ZONES", params={"fn":"AdvancedSearch","Style":"Portal3"})
+def get_collection(sesh, query_string):
+    
+    r=sesh.get(BASE_URL+"APS_ZONES", params={"fn":"AdvancedSearch","Style":"Portal3"}, timeout=None)
 
-    obj_id = re.findall('METHOD="?GET"? ACTION="(Obj_[0-9]+)"', r.text)[0]
+    obj_id = re.findall('METHOD="?GET"? ACTION="(Obj_[0-9]+)"', r.content)[0]
     
     # example:
     # http://iris.banq.qc.ca/alswww2.dll/Obj_564731451675170?Style=Portal3&SubStyle=&Lang=FRE&ResponseEncoding=utf-8&Method=QueryWithLimits&SearchType=AdvancedSearch&TargetSearchType=AdvancedSearch&DB=SearchServer&q.PageSize=10&q.form.t1.term=TitleSeries%3D&q.form.t1.expr=criterion&q.form.t2.logic=+and+&q.form.t2.term=au%3D&q.form.t2.expr=&q.form.t3.logic=+and+&q.form.t3.term=su%3D&q.form.t3.expr=&q.limits.limit=EnLigne.limits.enligne&q.limits.limit=medium.limits.Films&q.dpStart=&q.dpEnd=
@@ -128,15 +125,15 @@ def get_collection(query_string):
         
         session.cookies.set(name,quote(value),path=path,domain=domain)
     
-    Set_Cookie(sesh(), "banq_lang_c", "fr", 24, "/", ".banq.qc.ca" )
-    Set_Cookie(sesh(), "banq_from_c", "iris", None, "/", ".banq.qc.ca" )
+    Set_Cookie(sesh, "banq_lang_c", "fr", 24, "/", ".banq.qc.ca" )
+    Set_Cookie(sesh, "banq_from_c", "iris", None, "/", ".banq.qc.ca" )
     
-    r = sesh().get(BASE_URL+obj_id, params=queryForm) 
+    r = sesh.get(BASE_URL+obj_id, params=queryForm, timeout=None) 
     
-    return get_records(r.text)
+    return get_records(r.content)
 
-def get_video_paywall(url):
-    sesh().login()
-    r = sesh().get(unquote(url))
+def get_video_paywall(sesh, url):
+    sesh.login()
+    r = sesh.get(unquote(url), timeout=None)
     ptn = re.compile('source src="(.+?)" type="video/mp4"')
-    return ptn.findall(r.text)[0]
+    return ptn.findall(r.content)[0]

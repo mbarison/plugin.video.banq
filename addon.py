@@ -3,6 +3,7 @@ from operator import itemgetter
 
 #from resources.lib.banq import login
 from resources.lib.scraper import *
+from resources.lib.banq import BanqSession
 
 import subprocess, platform
 
@@ -19,7 +20,7 @@ def main_menu():
 
 @plugin.route('/collection/<url>')
 def show_collection(url):
-    records,skiplinks = get_collection(url)
+    records,skiplinks = get_collection(sesh, url)
 
     items = []
  
@@ -49,7 +50,7 @@ def show_collection(url):
 @plugin.route('/results/<url>/<set>')
 def show_results(url,set):
     print url, set
-    records,skiplinks = get_results_page(url, set)
+    records,skiplinks = get_results_page(sesh, url, set)
 
     items = []
  
@@ -78,7 +79,7 @@ def show_results(url,set):
 
 @plugin.route('/record/<url>/')
 def show_record_info(url):
-    records = get_record_info(url)
+    records = get_record_info(sesh, url)
 
     print records
 
@@ -101,9 +102,12 @@ def play_video(url):
     videourl = get_video_paywall(url)
     plugin.log.info('Playing url: %s' % videourl)
     plugin.set_resolved_url(videourl)
-    if platform.machine() == 'x86_64':
+    if platform.machine() == 'x86_64' and not 'xbmc' in dir():
         subprocess.call(["vlc",videourl])
 
 
 if __name__ == '__main__':
+    global sesh
+    sesh = BanqSession()
+    print "STARTING SESSION %s" % sesh
     plugin.run()

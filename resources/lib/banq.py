@@ -3,9 +3,32 @@ import codecs
 import re
 import json
 import copy
+import threading
 from BeautifulSoup import BeautifulSoup
 
+
+
 # use this for testing only
+import logging
+
+# These two lines enable debugging at httplib level (requests->urllib3->http.client)
+# You will see the REQUEST, including HEADERS and DATA, and RESPONSE with HEADERS but without DATA.
+# The only thing missing will be the response.body which is not logged.
+try:
+    import http.client as http_client
+except ImportError:
+    # Python 2
+    import httplib as http_client
+http_client.HTTPConnection.debuglevel = 1
+
+# You must initialize logging, otherwise you'll not see debug output.
+logging.basicConfig() 
+logging.getLogger().setLevel(logging.DEBUG)
+requests_log = logging.getLogger("requests.packages.urllib3")
+requests_log.setLevel(logging.DEBUG)
+requests_log.propagate = True
+
+
 try:
     from xbmc import translatePath
 except:
@@ -26,26 +49,50 @@ def convert(html):
 
 from urllib import quote
 
-# implement a singleton pattern for the session class
-class Singleton(type):
+# Thread safe singleton class
+# Based on tornado.ioloop.IOLoop.instance() approach.
+# See https://github.com/facebook/tornado
+# class SingletonMixin(object):
+#     __singleton_lock = threading.Lock()
+#     __singleton_instance = None
+# 
+#     @classmethod
+#     def __call__(cls, *args, **kwargs):
+#         if not cls.__singleton_instance:
+#             with cls.__singleton_lock:
+#                 if not cls.__singleton_instance:
+#                     cls.__singleton_instance = cls()
+#         return cls.__singleton_instance
+
+# implement a thread-safe singleton pattern for the session class
+class MultithreadSingleton(type):
     _instances = {}
+    _singleton_lock = threading.Lock()
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+                with cls._singleton_lock:
+                    if cls not in cls._instances:
+                        cls._instances[cls] = super(MultithreadSingleton, cls).__call__(*args, **kwargs)
+        print "Instances %s" % cls._instances.values()
+        print "Session instance %s" % cls._instances[cls]
         return cls._instances[cls]
 
 #Python2
 class BanqSession(requests.Session):
-    __metaclass__ = Singleton
+    __metaclass__ = MultithreadSingleton
     PORTAL_URL = "https://www.banq.qc.ca/idp/Authn/UserPassword"
 
     def __init__(self):
         super(BanqSession, self).__init__()
         self.logged_in = False
+        print "REQUESTS %s" % requests.__version__
     
     def login(self):        
         if self.logged_in:
+            print "%s already logged in" % self
             return
+        
+        print "Logging %s in" % self
         
         f = open(translatePath("special://home/addons/plugin.video.banq/pwd.json"))
         loginForm = json.load(f)
@@ -76,6 +123,6 @@ class BanqSession(requests.Session):
         for i in self.cookies:
             print(i.name,i.value,i.expires)
             
-        print "LOGIN COMPLETE"
-        self.logged_in = True
+        print "%s LOGIN COMPLETE" % self
+        self.logged_in = True    
         return
