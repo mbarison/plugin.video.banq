@@ -34,8 +34,10 @@ def show_collection(url):
                       'path': plugin.url_for('show_results', url=rec["url"], set=rec["set"]),
                       'thumbnail' : rec["thumbnail"]})
 
-    for rec in records:
-        items.append({'label': rec["name"],
+    records.sort(key=lambda x:x["name"])
+
+    for i,rec in enumerate(records):
+        items.append({'label': "[%d/%d] %s" % (i+1+rec["startno"],rec["lastno"],rec["name"]),
                       'path': plugin.url_for('show_record_info', url=rec["url"]),
                       'thumbnail' : rec["thumbnail"],
                       #'info' : {"Plot" : girl.description},
@@ -64,8 +66,10 @@ def show_results(url,set):
                       'path': plugin.url_for('show_results', url=rec["url"], set=rec["set"]),
                       'thumbnail' : rec["thumbnail"]})
 
-    for rec in records:
-        items.append({'label': rec["name"],
+    records.sort(key=lambda x:x["name"])
+
+    for i,rec in enumerate(records):
+        items.append({'label': "[%d/%d] %s" % (i+1+rec["startno"],rec["lastno"],rec["name"]),
                       'path': plugin.url_for('show_record_info', url=rec["url"]),
                       'thumbnail' : rec["thumbnail"],
                       #'info' : {"Plot" : girl.description},
@@ -114,6 +118,14 @@ if __name__ == '__main__':
     print "PID %s THREAD %s" % (os.getpid(), threading.current_thread())
     print "Plugin instance %s" % plugin
     #sesh.load_cookies("banq_cookies.pkl")
+    addonID = plugin.addon.getAddonInfo('id')
+    print "Addon ID: %s" % addonID 
+    addonUserdataFolder = translatePath("special://profile/addon_data/"+addonID)
+    print translatePath("special://profile/addon_data/"+addonID)
+    while (not os.path.exists(translatePath("special://profile/addon_data/"+addonID+"/settings.xml"))):
+        plugin.addon.openSettings()
+
+    
     plugin.run()
     print "REACHED END OF PLUGIN, STORING SESSION DATA"
     #sesh.save_cookies("banq_cookies.pkl")

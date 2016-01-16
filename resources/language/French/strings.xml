@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <strings>
-  <string id="32001">Settings for your BaNQ account</string>
-  <string id="32011">Username</string>
-  <string id="32012">Password</string>
+  <string id="32001">Paramètres de votre compte BaNQ</string>
+  <string id="32011">Utilisateur</string>
+  <string id="32012">Mot de passe</string>
 <!--
   <string id="30001">Next Page</string>
   <string id="30002">Latest Videos</string>

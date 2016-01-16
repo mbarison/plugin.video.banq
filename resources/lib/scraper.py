@@ -35,6 +35,11 @@ def get_records(txt):
     
     ptn = re.compile("\s\[ressource.+que\]\s?")
     
+    _set  = re.findall('<INPUT TYPE=HIDDEN NAME="Set" VALUE = "(.+?)">', txt)[0]
+    _page = int(re.findall('id="SearchResultsPage" name="Query.Page" value="([0-9]+)"', txt)[0])
+    _lastno = soup.find("div", {"class":"searchHits"}).contents[0]
+    _lastno = int(re.findall("\(([0-9]+)\)", _lastno)[0])
+    
     recs  = soup.findAll('td', {'class' :"SummaryImageCell"})
     recs += soup.findAll('td', {'class' :"SummaryImageCellStripe"})
     items = []
@@ -43,10 +48,12 @@ def get_records(txt):
         lnk = rec.find('a')
         items.append({ 'name'      : ptn.sub("", lnk["title"]).strip(),
                        'url'       : BASE_URL+lnk['href'].replace("View=ISBD","View=Annotated"), # use all info
-                       'thumbnail' : BASE_URL+"/Portal3/IMG/MAT/Video_enligne.png"
+                       'thumbnail' : BASE_URL+"/Portal3/IMG/MAT/Video_enligne.png",
+                       'startno'   : (_page-1)*RESULTS_PER_PAGE,
+                       'lastno'    : _lastno,
                       })
 
-    _set = re.findall('<INPUT TYPE=HIDDEN NAME="Set" VALUE = "(.+?)">', txt)[0]
+    
 
     # let's see i there's any records left
     for lnk in soup.findAll('a', {'class' : "pageNavLink"}):
