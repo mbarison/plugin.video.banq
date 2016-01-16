@@ -1,17 +1,22 @@
+import pickle
+
 from xbmcswift2 import Plugin
 from operator import itemgetter
 
 #from resources.lib.banq import login
 from resources.lib.scraper import *
-from resources.lib.banq import BanqSession
+from xbmc import translatePath
 
-import subprocess, platform
+if not 'sesh' in dir():
+    from resources.lib.banq import sesh
+
+import subprocess, platform, os, threading
 
 plugin = Plugin()
 
-
 @plugin.route('/')
 def main_menu():
+    print dir()
     items = [{'label': 'Show Criterion Collection', 'path': plugin.url_for('show_collection',url='Criterion')},]
           #{'label': 'Show Trailers', 'path': plugin.url_for('show_galleries',url='category/trailers')},
           #{'label': 'Show Tags', 'path': plugin.url_for('show_tags',url='tags')},
@@ -47,7 +52,7 @@ def show_collection(url):
    
     return items
 
-@plugin.route('/results/<url>/<set>')
+@plugin.route('/collection/<url>/<set>')
 def show_results(url,set):
     print url, set
     records,skiplinks = get_results_page(sesh, url, set)
@@ -81,8 +86,6 @@ def show_results(url,set):
 def show_record_info(url):
     records = get_record_info(sesh, url)
 
-    print records
-
     videos = [{
         'label': rec["name"],
         'path': plugin.url_for('play_video', url=rec['url']),
@@ -99,7 +102,7 @@ def show_record_info(url):
 
 @plugin.route('/videos/<url>/')
 def play_video(url):
-    videourl = get_video_paywall(url)
+    videourl = get_video_paywall(sesh, url)
     plugin.log.info('Playing url: %s' % videourl)
     plugin.set_resolved_url(videourl)
     if platform.machine() == 'x86_64' and not 'xbmc' in dir():
@@ -107,7 +110,14 @@ def play_video(url):
 
 
 if __name__ == '__main__':
-    global sesh
-    sesh = BanqSession()
     print "STARTING SESSION %s" % sesh
+    print "PID %s THREAD %s" % (os.getpid(), threading.current_thread())
+    print "Plugin instance %s" % plugin
+    #sesh.load_cookies("banq_cookies.pkl")
     plugin.run()
+    print "REACHED END OF PLUGIN, STORING SESSION DATA"
+    #sesh.save_cookies("banq_cookies.pkl")
+    path = translatePath("special://home/addons/plugin.video.banq")
+    f = open(os.path.join(path,"banq_session.pkl"),"w")
+    pickle.dump(sesh, f)
+    f.close()
