@@ -1,41 +1,34 @@
 import requests
-import codecs
 import re
-import json
 import copy
-import threading
 import pickle
 import os
 #import codecs
 from BeautifulSoup import BeautifulSoup
 
-# # use this for testing only
-# import logging
-# 
-# # These two lines enable debugging at httplib level (requests->urllib3->http.client)
-# # You will see the REQUEST, including HEADERS and DATA, and RESPONSE with HEADERS but without DATA.
-# # The only thing missing will be the response.body which is not logged.
-# try:
-#     import http.client as http_client
-# except ImportError:
-#     # Python 2
-#     import httplib as http_client
-# http_client.HTTPConnection.debuglevel = 1
-#  
-# # You must initialize logging, otherwise you'll not see debug output.
-# logging.basicConfig() 
-# logging.getLogger().setLevel(logging.DEBUG)
-# requests_log = logging.getLogger("requests.packages.urllib3")
-# requests_log.setLevel(logging.DEBUG)
-# requests_log.propagate = True
+# use this for testing only
+def activate_logging():
+    import logging
+     
+    # These two lines enable debugging at httplib level (requests->urllib3->http.client)
+    # You will see the REQUEST, including HEADERS and DATA, and RESPONSE with HEADERS but without DATA.
+    # The only thing missing will be the response.body which is not logged.
+    try:
+        import http.client as http_client
+    except ImportError:
+        # Python 2
+        import httplib as http_client
+    http_client.HTTPConnection.debuglevel = 1
+      
+    # You must initialize logging, otherwise you'll not see debug output.
+    logging.basicConfig() 
+    logging.getLogger().setLevel(logging.DEBUG)
+    requests_log = logging.getLogger("requests.packages.urllib3")
+    requests_log.setLevel(logging.DEBUG)
+    requests_log.propagate = True
+    
+    return
 
-
-try:
-    from xbmc import translatePath
-except:
-    import os
-    def translatePath(p):
-        return p.replace("special://home/addons/", os.path.expanduser("~/"))
 
 hexentityMassage = copy.copy(BeautifulSoup.MARKUP_MASSAGE)
 # replace hexadecimal character reference by decimal one
@@ -63,17 +56,18 @@ class Singleton(type):
 class BanqSession(requests.Session):
     __metaclass__ = Singleton
     PORTAL_URL = "https://www.banq.qc.ca/idp/Authn/UserPassword"
-    __picklableObjects__ = ['path','obj_id','clean_login']
+    __picklableObjects__ = ['obj_id','clean_login','debug_mode']
     ptn = re.compile("Obj_[0-9]+")
 
     def __init__(self):
         super(BanqSession, self).__init__()
-        self.path   = translatePath("special://home/addons/plugin.video.banq")
+        #self.path   = translatePath("special://profile/addon_data/plugin.video.banq")
         self.obj_id = None
         self.clean_login  = False
-        if not os.path.isdir(self.path):
-            os.mkdir(self.path)
-        #print "REQUESTS %s" % requests.__version__
+        self.debug_mode   = False
+        #if not os.path.isdir(self.path):
+        #    os.mkdir(self.path)
+
     
     def get(self, url, **kwargs):
         m = BanqSession.ptn.search(url)
@@ -114,37 +108,39 @@ class BanqSession(requests.Session):
             self.__dict__[po] = state[po]
         return
     
-    def load_cookies(self, fname):
-        try:
-            f = open(os.path.join(self.path, fname))
-            cookie_dict = pickle.load(f)
-            for k,v in cookie_dict.iteritems():
-                self.cookies.set(k,v)
-            f.close()
-            print "Cookies loaded"
-        except:
-            print "Could not load cookies"
+    def set_debug_mode(self, d):
+        self.debug_mode = d
         return
     
-    def save_cookies(self, fname):
-        try:
-            self.cookies.clear_expired_cookies()
-            f = open(os.path.join(self.path, fname),"w")
-            pickle.dump(self.cookies.get_dict(), f)
-            f.close()
-            print "Cookies saved"
-        except:
-            print "Could not save cookies"        
-        return
+#     def load_cookies(self, fname):
+#         try:
+#             f = open(os.path.join(self.path, fname))
+#             cookie_dict = pickle.load(f)
+#             for k,v in cookie_dict.iteritems():
+#                 self.cookies.set(k,v)
+#             f.close()
+#             print "Cookies loaded"
+#         except:
+#             print "Could not load cookies"
+#         return
+#     
+#     def save_cookies(self, fname):
+#         try:
+#             self.cookies.clear_expired_cookies()
+#             f = open(os.path.join(self.path, fname),"w")
+#             pickle.dump(self.cookies.get_dict(), f)
+#             f.close()
+#             print "Cookies saved"
+#         except:
+#             print "Could not save cookies"        
+#         return
     
-    def login(self):        
+    def login(self, uname, pwd):        
         print "Logging %s in" % self
         if self.clean_login:
             self.cleanup_login_cookies()
         
-        f = open(os.path.join(self.path, "pwd.json"))
-        loginForm = json.load(f)
-        f.close()
+        loginForm = {"j_username":uname, "j_password":pwd}
 
         r=self.get("http://res.banq.qc.ca/login")
 
@@ -156,9 +152,10 @@ class BanqSession(requests.Session):
         sso_url = re.findall('action="(https.+?)"', r.text)[0]
         relay = re.findall('<input type="hidden" name="RelayState" value="(.+?)"', r.text)[0]
         saml  = re.findall('<input type="hidden" name="SAMLRequest" value="(.+?)"', r.text)[0]
-        print sso_url
-        print relay
-        print saml
+        if 'activate_logging' in dir():
+            print sso_url
+            print relay
+            print saml
 
         r = self.post(sso_url, data={"RelayState" : relay, "SAMLRequest" : saml})
         r=  self.post(self.PORTAL_URL, data=loginForm)
@@ -166,9 +163,10 @@ class BanqSession(requests.Session):
         sso_url = convert(re.findall('action="(https.+?)"', r.text)[0])
         relay = re.findall('<input type="hidden" name="RelayState" value="(.+?)"', r.text)[0]
         saml  = re.findall('<input type="hidden" name="SAMLResponse" value="(.+?)"', r.text)[0]
-        print sso_url
-        print relay
-        #print saml
+        if 'activate_logging' in dir():
+            print sso_url
+            print relay
+            print saml
 
         r = self.post(sso_url, data={"RelayState" : relay, "SAMLResponse" : saml})
 
@@ -179,12 +177,19 @@ class BanqSession(requests.Session):
         self.clean_login = True
         return
 
-if not 'sesh' in dir():
-    path = translatePath("special://home/addons/plugin.video.banq")
-    if not os.path.isfile(os.path.join(path,"banq_session.pkl")):
-        sesh = BanqSession()
-    else:
-        print "Opening %s" % os.path.join(path,"banq_session.pkl")
-        f = open(os.path.join(path,"banq_session.pkl"))
-        sesh = pickle.load(f)
-        f.close()
+def loadSession(path):
+    if not 'sesh' in dir():
+        if not os.path.isfile(os.path.join(path,"banq_session.pkl")):
+            sesh = BanqSession()
+        else:
+            try:
+                print "Opening %s" % os.path.join(path,"banq_session.pkl")
+                f = open(os.path.join(path,"banq_session.pkl"))
+                sesh = pickle.load(f)
+                f.close()
+            except:
+                print "Unpickling BanqSession failed, getting new instance"
+                sesh = BanqSession()
+            
+    return sesh
+            

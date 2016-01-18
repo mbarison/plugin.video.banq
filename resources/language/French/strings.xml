@@ -1,19 +1,16 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <strings>
   <string id="32001">Paramètres de votre compte BaNQ</string>
-  <string id="32011">Utilisateur</string>
+  <string id="32002">Paramètres avancés</string>
+  <string id="32011">Nom d'utilisateur</string>
   <string id="32012">Mot de passe</string>
-<!--
-  <string id="30001">Next Page</string>
-  <string id="30002">Latest Videos</string>
-  <string id="30003">All Shows</string>
-  <string id="30004">Favourites</string>
-  <string id="30005">Add to queue</string>
-  <string id="30006">Add to addon favourites</string>
-  <string id="30007">Remove from favourites</string>
-  <string id="30101">Use thumb as fanart</string>
-  <string id="30102">Force View</string>
-  <string id="30103">ViewID</string>
-  <string id="30104">Subtitles</string>
-    -->
+  <string id="32013">Langage</string>
+  <string id="32014">Anglais</string>
+  <string id="32015">Français</string>
+  <string id="32016">Mode de débogage</string>
+  <string id="32017">Résultats per page</string>
+  <string id="32101">Montrer la collection Criterion</string>
+  <string id="32102">Recherche par collection</string>
+  <string id="32103">Recherche par acteur/réalisateur</string>
+  <string id="32104">Recherche par titre</string>
 </strings>

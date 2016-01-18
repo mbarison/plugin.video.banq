@@ -4,33 +4,33 @@ from BeautifulSoup import BeautifulSoup
 import re
 
 BASE_URL = "http://iris.banq.qc.ca/alswww2.dll/"
-RESULTS_PER_PAGE = 50
 
 def bs_parse(txt):
     '''Parses HTML via BeautifulSoup'''
     return BeautifulSoup(txt, convertEntities=BeautifulSoup.HTML_ENTITIES)
 
-def get_results_page(sesh, url, set):
-  
-    print url
+
+
+def get_results_page(sesh, url, setid, lang="English", results=25):
+    #print url
     
     # ok, so now I have to use POST for no reason? FACEPALM
     queryForm = {"Style" : "Portal3",
                  "SubStyle" : "",
-                 "Lang" : "ENG",
+                 "Lang" : lang.upper()[:3],
                  "ResponseEncoding" : "utf-8",
                  "BrowseAsHloc" : "",
-                 "q.PageSize" : RESULTS_PER_PAGE,
-                 "SET"        : set,
+                 "q.PageSize" : results,
+                 "SET"        : setid,
                  }
     
     
     r = sesh.get(url, timeout=None) #post(url, data=queryForm)
     #print r.content
         
-    return get_records(r.content)
+    return get_records(r.content,results)
 
-def get_records(txt):
+def get_records(txt,results):
     soup = bs_parse(txt)
     
     ptn = re.compile("\s\[ressource.+que\]\s?")
@@ -46,10 +46,10 @@ def get_records(txt):
     skiplinks = []
     for rec in recs:
         lnk = rec.find('a')
-        items.append({ 'name'      : ptn.sub("", lnk["title"]).strip(),
+        items.append({ 'name'      : ptn.sub("", lnk["title"]).strip().replace("=",u" \u2014"),
                        'url'       : BASE_URL+lnk['href'].replace("View=ISBD","View=Annotated"), # use all info
                        'thumbnail' : BASE_URL+"/Portal3/IMG/MAT/Video_enligne.png",
-                       'startno'   : (_page-1)*RESULTS_PER_PAGE,
+                       'startno'   : (_page-1)*results,
                        'lastno'    : _lastno,
                       })
 
@@ -71,13 +71,14 @@ def get_record_info(sesh, url):
     
     # hmmm, unstructured pages...
     link_ptn = re.compile("(http://res.banq.qc.ca/login\?url=http://search.alexanderstreet.com/view/work/[0-9]+)")
+    ptn = re.compile("\s\[ressource.+que\]\s?")
     
     item = {"url" : link_ptn.findall(r.content)[0]}
-    item['name'] = soup.find('span', {'class' : "BoldTitle"}).text.encode("utf-8").replace("[ressource \xc3\xa9lectronique]","").replace("(Film)","").strip()
+    item['name'] = ptn.sub("",soup.find('span', {'class' : "BoldTitle"}).text).replace("(Film)","").replace("=",u" \u2014").strip()
     
     return [item]
 
-def get_collection(sesh, query_string):
+def get_collection(sesh, query_string, lang="English", results=25):
     
     r=sesh.get(BASE_URL+"APS_ZONES", params={"fn":"AdvancedSearch","Style":"Portal3"}, timeout=None)
 
@@ -88,13 +89,13 @@ def get_collection(sesh, query_string):
 
     queryForm = {"Style" : "Portal3",
                  "SubStyle" : "",
-                 "Lang" : "ENG",
+                 "Lang" : lang.upper()[:3],
                  "ResponseEncoding" : "utf-8",
                  "Method" : "QueryWithLimits",
                  "SearchType" : "AdvancedSearch",
                  "DB" : "SearchServer",
                  "TargetSearchType" : "AdvancedSearch",
-                 "q.PageSize" : RESULTS_PER_PAGE,
+                 "q.PageSize" : results,
                  "q.limits.limit" : ["medium.limits.Films","EnLigne.limits.enligne"],
                  #"q.Query" : "criterion",
                  
@@ -132,15 +133,15 @@ def get_collection(sesh, query_string):
         
         session.cookies.set(name,quote(value),path=path,domain=domain)
     
-    Set_Cookie(sesh, "banq_lang_c", "fr", 24, "/", ".banq.qc.ca" )
+    Set_Cookie(sesh, "banq_lang_c", lang.lower()[:2], 24, "/", ".banq.qc.ca" )
     Set_Cookie(sesh, "banq_from_c", "iris", None, "/", ".banq.qc.ca" )
     
     r = sesh.get(BASE_URL+obj_id, params=queryForm, timeout=None) 
     
-    return get_records(r.content)
+    return get_records(r.content,results)
 
-def get_video_paywall(sesh, url):
-    sesh.login()
+def get_video_paywall(sesh, url, uname, pwd):
+    sesh.login(uname, pwd)
     r = sesh.get(unquote(url), timeout=None)
     ptn = re.compile('source src="(.+?)" type="video/mp4"')
     return ptn.findall(r.content)[0]

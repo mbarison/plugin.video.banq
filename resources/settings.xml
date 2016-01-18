@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <settings>
     <category label="32001">
-        <setting label="32011" type="text"   id="username" default=""/>
-        <setting label="32012" type="text"   id="password" option="hidden"  enable="!eq(-1,)" default=""/>
+        <setting label="32011" type="number"   id="username" default=""/>
+        <setting label="32012" type="number"   id="password" option="hidden"  enable="!eq(-1,)" default=""/>
+        <setting label="32013" type="select" id="lang"     lvalues="32014|32015" />
+    </category>
+    <category label="32002">
+		<setting label="32017" type="number" id="max_results" default="25"/>
+		<setting label="32016" type="bool" id="debug" default="false"/>
     </category>
 </settings>
