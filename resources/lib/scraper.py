@@ -69,6 +69,8 @@ def get_record_info(sesh, url):
     r = sesh.get(unquote(url), timeout=None)
     soup = bs_parse(r.content)
     
+    print r.content
+    
     # hmmm, unstructured pages...
     link_ptn = re.compile("(http://res.banq.qc.ca/login\?url=http://search.alexanderstreet.com/view/work/[0-9]+)")
     ptn = re.compile("\s\[ressource.+que\]\s?")
@@ -78,7 +80,7 @@ def get_record_info(sesh, url):
     
     return [item]
 
-def get_collection(sesh, query_string, lang="English", results=25):
+def get_collection(sesh, category, query_string, lang="English", results=25):
     
     r=sesh.get(BASE_URL+"APS_ZONES", params={"fn":"AdvancedSearch","Style":"Portal3"}, timeout=None)
 
@@ -86,6 +88,15 @@ def get_collection(sesh, query_string, lang="English", results=25):
     
     # example:
     # http://iris.banq.qc.ca/alswww2.dll/Obj_564731451675170?Style=Portal3&SubStyle=&Lang=FRE&ResponseEncoding=utf-8&Method=QueryWithLimits&SearchType=AdvancedSearch&TargetSearchType=AdvancedSearch&DB=SearchServer&q.PageSize=10&q.form.t1.term=TitleSeries%3D&q.form.t1.expr=criterion&q.form.t2.logic=+and+&q.form.t2.term=au%3D&q.form.t2.expr=&q.form.t3.logic=+and+&q.form.t3.term=su%3D&q.form.t3.expr=&q.limits.limit=EnLigne.limits.enligne&q.limits.limit=medium.limits.Films&q.dpStart=&q.dpEnd=
+
+    if category == "collection":
+        query_term = "TitleSeries="
+    elif category == "author":
+        query_term = "au="
+    elif category == "title":
+        query_term = "ti="
+    elif category == "subject":
+        query_term = "su="
 
     queryForm = {"Style" : "Portal3",
                  "SubStyle" : "",
@@ -100,7 +111,7 @@ def get_collection(sesh, query_string, lang="English", results=25):
                  #"q.Query" : "criterion",
                  
                  # advanced terms
-                 "q.form.t1.term" : "TitleSeries=",
+                 "q.form.t1.term" : query_term, #"TitleSeries=",
                  "q.form.t1.expr" : query_string,
                  }
     

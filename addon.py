@@ -47,25 +47,27 @@ else:
 
 @plugin.route('/')
 def main_menu():
-    print dir()
-    items = [{'label': translation(32102), 'path': plugin.url_for('search_collection')},
-             {'label': translation(32101), 'path': plugin.url_for('show_collection',url='Criterion')}]
+    items = [{'label': translation(32102), 'path': plugin.url_for('search_collection',category="collection")},
+             {'label': translation(32103), 'path': plugin.url_for('search_collection',category="author")},
+             {'label': translation(32104), 'path': plugin.url_for('search_collection',category="title")},
+             {'label': translation(32105), 'path': plugin.url_for('search_collection',category="subject")},
+             {'label': translation(32101), 'path': plugin.url_for('show_collection',category="collection",query='Criterion')}]
     return items
 
-@plugin.route('/search_collection')
-def search_collection():
-    kb = Keyboard('', 'Insert')
+@plugin.route('/search_collection/<category>')
+def search_collection(category):
+    kb = Keyboard('', translation(32106))
     kb.doModal()
     if (kb.isConfirmed()):
-        text = kb.getText()
+        text = kb.getText().strip()
     else:
         return
     
-    return show_collection(text)
+    return show_collection(text,category)
 
-@plugin.route('/collection/<query>')
-def show_collection(query):
-    records,skiplinks = get_collection(sesh, query, preferredLanguage, resultsPerPage)
+@plugin.route('/collection/<category>/<query>')
+def show_collection(query,category):
+    records,skiplinks = get_collection(sesh, category, query, preferredLanguage, resultsPerPage)
 
     items = []
  
@@ -90,14 +92,14 @@ def show_collection(query):
 
     
     
-    print "ITEMS", len(items)
+    print "ITEMS %d" % len(items)
    
     return items
 
-@plugin.route('/collection/<url>/<setid>')
-def show_results(url, setid, preferredLanguage, resultsPerPage):
+@plugin.route('/nextpage/<url>/<setid>')
+def show_results(url, setid):
     print url, setid
-    records,skiplinks = get_results_page(sesh, url, setid)
+    records,skiplinks = get_results_page(sesh, url, setid, preferredLanguage, resultsPerPage)
 
     items = []
  
@@ -122,7 +124,7 @@ def show_results(url, setid, preferredLanguage, resultsPerPage):
 
     
     
-    print "ITEMS", len(items)
+    print "ITEMS %d" % len(items)
     
     return items
 
